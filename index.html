@@ -101,6 +101,12 @@
             white-space: nowrap;
         }
 
+        /* Login Modal Hidden Rule */
+        #login-modal.hidden,
+        #auth-modal.hidden {
+            display: none !important;
+        }
+
         /* Print Layout Rules for BM.6.2.5 Form */
         @media print {
             body {
@@ -155,7 +161,7 @@
     <!-- ============================================================== -->
     <!-- 0. AUTHENTICATION GATEWAY (SECURED & NO AUTO-FILL)             -->
     <!-- ============================================================== -->
-    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-md transition-all duration-300">
+    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-md transition-all duration-300">
         <div class="glass-auth w-full max-w-md rounded-3xl p-8 relative overflow-hidden text-center">
             <!-- Decorative Accent -->
             <div class="absolute -top-16 -right-16 w-48 h-48 bg-red-600/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -1261,18 +1267,30 @@
         window.addEventListener('DOMContentLoaded', async () => {
             initDefaultDeviceRow();
 
-            // Kiểm tra session
+            // Kiểm tra trạng thái phiên làm việc từ localStorage
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
             const savedUser = localStorage.getItem('digi_cal_user');
-            if (savedUser) {
+
+            if (isLoggedIn) {
                 try {
-                    currentUser = JSON.parse(savedUser);
+                    currentUser = savedUser ? JSON.parse(savedUser) : {
+                        email: 'CST@digivn.com',
+                        name: 'Quản trị viên CST',
+                        role: 'admin'
+                    };
                     applyUserPermissions();
-                    hideAuthModal();
+                    hideLoginModal();
                 } catch (e) {
-                    showAuthModal();
+                    currentUser = {
+                        email: 'CST@digivn.com',
+                        name: 'Quản trị viên CST',
+                        role: 'admin'
+                    };
+                    applyUserPermissions();
+                    hideLoginModal();
                 }
             } else {
-                showAuthModal();
+                showLoginModal();
             }
 
             await loadRequestsData();
@@ -1280,15 +1298,35 @@
         });
 
         // ----------------- AUTH (BẢO MẬT & ĐIỀN THÔ) -----------------
-        function showAuthModal() {
-            document.getElementById('auth-modal').classList.remove('hidden');
-            document.getElementById('login-email').value = '';
-            document.getElementById('login-password').value = '';
+        function showLoginModal() {
+            const modal = document.getElementById('login-modal') || document.getElementById('auth-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.removeProperty('display');
+                modal.style.display = 'flex';
+            }
+            const emailInput = document.getElementById('login-email');
+            const pwdInput = document.getElementById('login-password');
+            if (emailInput) emailInput.value = '';
+            if (pwdInput) pwdInput.value = '';
+            const errDiv = document.getElementById('login-error');
+            if (errDiv) errDiv.classList.add('hidden');
         }
+        const showAuthModal = showLoginModal;
 
-        function hideAuthModal() {
-            document.getElementById('auth-modal').classList.add('hidden');
+        function hideLoginModal() {
+            const modal = document.getElementById('login-modal') || document.getElementById('auth-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.setProperty('display', 'none', 'important');
+            }
+            const mainApp = document.getElementById('main-app');
+            if (mainApp) {
+                mainApp.classList.remove('hidden');
+                mainApp.style.display = 'flex';
+            }
         }
+        const hideAuthModal = hideLoginModal;
 
         function togglePasswordVisibility() {
             const pwd = document.getElementById('login-password');
@@ -1303,73 +1341,75 @@
         }
 
         async function handleLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value.trim();
-            const password = document.getElementById('login-password').value.trim();
+            // 1. Đảm bảo form đăng nhập không tự reload trang (sử dụng event.preventDefault())
+            if (e && e.preventDefault) {
+                e.preventDefault();
+            }
+
+            const emailInput = document.getElementById('login-email');
+            const passwordInput = document.getElementById('login-password');
             const errDiv = document.getElementById('login-error');
             const submitBtn = document.getElementById('btn-login-submit');
 
-            errDiv.classList.add('hidden');
+            // 2. So sánh thông tin đăng nhập:
+            // - Email: CST@digivn.com (sử dụng .trim().toLowerCase() để tránh lỗi hoa/thường hay khoảng trắng)
+            // - Mật khẩu: CST@654 (sử dụng .trim())
+            const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+            const password = passwordInput ? passwordInput.value.trim() : '';
+
+            if (errDiv) errDiv.classList.add('hidden');
+
             if (!email || !password) {
-                errDiv.textContent = 'Vui lòng nhập đầy đủ Email và Mật khẩu!';
-                errDiv.classList.remove('hidden');
+                if (errDiv) {
+                    errDiv.textContent = 'Vui lòng nhập đầy đủ Email và Mật khẩu!';
+                    errDiv.classList.remove('hidden');
+                }
                 return;
             }
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Đang kiểm tra...';
+            const isCSTAdmin = (email === 'cst@digivn.com' && password === 'CST@654');
+            const isStaff = (email === 'nhanvien@digivn.com' && password === '123456');
 
-            try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    currentUser = data.user;
-                    localStorage.setItem('digi_cal_user', JSON.stringify(currentUser));
-                    applyUserPermissions();
-                    hideAuthModal();
-                    showToast('Đăng nhập thành công! Chào mừng ' + currentUser.name, 'success');
-                    await loadRequestsData();
-                } else {
-                    validateLocalCredentials(email, password);
-                }
-            } catch (err) {
-                validateLocalCredentials(email, password);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket text-base"></i><span>Xác Thực & Đăng Nhập</span>';
-            }
-        }
-
-        function validateLocalCredentials(email, password) {
-            const errDiv = document.getElementById('login-error');
-            if (email.toLowerCase() === 'cst@digivn.com' && password === 'CST@654') {
-                currentUser = {
+            // 3. Khi thông tin khớp:
+            if (isCSTAdmin || isStaff) {
+                currentUser = isCSTAdmin ? {
                     email: 'CST@digivn.com',
                     name: 'Quản trị viên CST',
                     role: 'admin'
-                };
-            } else if (email.toLowerCase() === 'nhanvien@digivn.com' && password === '123456') {
-                currentUser = {
+                } : {
                     email: 'nhanvien@digivn.com',
                     name: 'Nhân viên Tiếp nhận',
                     role: 'user'
                 };
-            } else {
-                errDiv.textContent = 'Email hoặc mật khẩu không chính xác. Chỉ người có quyền mới được đăng nhập!';
-                errDiv.classList.remove('hidden');
-                return;
-            }
 
-            localStorage.setItem('digi_cal_user', JSON.stringify(currentUser));
-            applyUserPermissions();
-            hideAuthModal();
-            showToast('Đăng nhập thành công! Quyền: ' + (currentUser.role === 'admin' ? 'Quản trị CST' : 'Nhân viên'), 'success');
-            loadRequestsData();
+                // - Lưu trạng thái đăng nhập vào localStorage: localStorage.setItem('isLoggedIn', 'true')
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('digi_cal_user', JSON.stringify(currentUser));
+
+                // Đồng bộ phiên backend nếu máy chủ đang chạy
+                try {
+                    fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: currentUser.email, password: password })
+                    }).catch(() => {});
+                } catch (apiErr) {}
+
+                // Áp dụng quyền người dùng
+                applyUserPermissions();
+
+                // - Ẩn hoàn toàn modal/overlay đăng nhập (#login-modal: display: none !important)
+                // - Hiển thị giao diện làm việc chính
+                hideLoginModal();
+
+                showToast('Đăng nhập thành công! Chào mừng ' + currentUser.name, 'success');
+                loadRequestsData();
+            } else {
+                if (errDiv) {
+                    errDiv.textContent = 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!';
+                    errDiv.classList.remove('hidden');
+                }
+            }
         }
 
         function applyUserPermissions() {
@@ -1397,9 +1437,12 @@
             try {
                 await fetch('/api/auth/logout', { method: 'POST' });
             } catch (e) {}
+            localStorage.removeItem('isLoggedIn');
             localStorage.removeItem('digi_cal_user');
             currentUser = null;
-            showAuthModal();
+            showLoginModal();
+            showToast('Đã đăng xuất khỏi phiên làm việc', 'info');
+        }
             showToast('Đã đăng xuất khỏi phiên làm việc', 'info');
         }
 
