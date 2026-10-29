@@ -638,6 +638,13 @@ def api_delete_request(req_id):
 
 # ================= EXPORT EXCEL API =================
 
+def normalize_excel_sample_codes(val):
+    if not val:
+        return ''
+    import re
+    items = [s.strip() for s in re.split(r'[\r\n,;]+|<br\s*/?>', str(val)) if s.strip()]
+    return '\n'.join(items)
+
 @app.route('/api/export-excel', methods=['GET'])
 def api_export_excel():
     user = session.get('user', {})
@@ -742,10 +749,25 @@ def api_export_excel():
         ws.cell(current_row, 4, d.get('service_desc', '')).alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
         ws.cell(current_row, 5, d.get('customer_name', '')).alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
         
-        ws.cell(current_row, 6, d.get('code_temp', '')).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-        ws.cell(current_row, 7, d.get('code_hum', '')).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-        ws.cell(current_row, 8, d.get('code_press', '')).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-        ws.cell(current_row, 9, d.get('code_gas', '')).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        temp_val = normalize_excel_sample_codes(d.get('code_temp', ''))
+        hum_val = normalize_excel_sample_codes(d.get('code_hum', ''))
+        press_val = normalize_excel_sample_codes(d.get('code_press', ''))
+        gas_val = normalize_excel_sample_codes(d.get('code_gas', ''))
+
+        ws.cell(current_row, 6, temp_val).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        ws.cell(current_row, 7, hum_val).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        ws.cell(current_row, 8, press_val).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        ws.cell(current_row, 9, gas_val).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+        max_sample_lines = max(
+            len(temp_val.split('\n')) if temp_val else 1,
+            len(hum_val.split('\n')) if hum_val else 1,
+            len(press_val.split('\n')) if press_val else 1,
+            len(gas_val.split('\n')) if gas_val else 1,
+            1
+        )
+        if max_sample_lines > 1:
+            ws.row_dimensions[current_row].height = max(24, max_sample_lines * 17)
         
         ws.cell(current_row, 10, qty).alignment = Alignment(horizontal='center', vertical='center')
         
@@ -823,12 +845,15 @@ def index():
 def static_proxy(path):
     return send_from_directory('.', path)
 
+# Tự động khởi tạo database khi import module (phục vụ Gunicorn / Render)
+init_db()
+
 if __name__ == '__main__':
-    init_db()
+    port = int(os.environ.get('PORT', 5000))
     print("==================================================================")
     print("  DIGI TECHNOLOGIES - HỆ THỐNG TIẾP NHẬN YÊU CẦU HIỆU CHUẨN & SỔ PTĐ")
-    print("  Ứng dụng đang chạy tại: http://localhost:5000")
+    print(f"  Ứng dụng đang chạy tại: http://localhost:{port}")
     print("  Tài khoản Admin: CST@digivn.com | Mật khẩu: CST@654")
     print("  Tài khoản Nhân viên: nhanvien@digivn.com | Mật khẩu: 123456")
     print("==================================================================")
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)

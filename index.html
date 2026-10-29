@@ -88,6 +88,19 @@
             background-color: #F1F5F9 !important;
         }
 
+        /* Sample Code Item: Tách thành từng dòng riêng biệt, rõ ràng, dễ đối soát */
+        .sample-code-item {
+            display: block;
+            text-align: center;
+            font-family: Consolas, Monaco, monospace;
+            padding: 2px 6px;
+            margin: 2px 0;
+            background-color: #F8FAFC;
+            border-radius: 5px;
+            border: 1px solid #E2E8F0;
+            white-space: nowrap;
+        }
+
         /* Print Layout Rules for BM.6.2.5 Form */
         @media print {
             body {
@@ -302,7 +315,7 @@
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Mã Phiếu Yêu Cầu <span class="text-digi">*</span></label>
                                 <div class="flex space-x-1.5">
-                                    <input type="text" id="req-code" required placeholder="HC.26.xxx"
+                                    <input type="text" id="req-code" required placeholder="HC.26.xxx" oninput="calculateEverything()"
                                         class="flex-1 px-3.5 py-2.5 text-sm font-mono font-bold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-digi/40 focus:border-digi">
                                     <button type="button" onclick="fetchNextCode()" title="Tự động sinh mã tiếp theo"
                                         class="px-3 py-2.5 text-sm font-bold bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-300 text-slate-700">
@@ -388,39 +401,54 @@
                             </table>
                         </div>
 
-                        <!-- KHỐI MÃ MẪU -->
+                        <!-- KHỐI MÃ MẪU: TỰ ĐỘNG SINH & HIỂN THỊ TÁCH TỪNG DÒNG THEO SỐ LƯỢNG -->
                         <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
-                            <div class="flex flex-wrap items-center justify-between mb-3">
-                                <span class="text-sm font-black text-slate-900 uppercase tracking-wider">
-                                    <i class="fa-solid fa-tags mr-1.5 text-digi"></i>MÃ MẪU:
-                                </span>
-                                <button type="button" onclick="autoAllocateSampleCodes()"
-                                    class="text-xs font-bold text-digi hover:underline flex items-center space-x-1">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                <div>
+                                    <span class="text-sm font-black text-slate-900 uppercase tracking-wider">
+                                        <i class="fa-solid fa-tags mr-1.5 text-digi"></i>MÃ MẪU PHÂN THEO NHÓM:
+                                    </span>
+                                    <span class="text-xs text-slate-500 ml-1 font-medium">(Tự động sinh theo Số lượng, mỗi mã 1 dòng riêng biệt)</span>
+                                </div>
+                                <button type="button" onclick="autoAllocateSampleCodes(true)"
+                                    class="px-3 py-1.5 text-xs font-bold text-digi hover:text-white bg-red-50 hover:bg-digi border border-red-200 rounded-xl transition flex items-center space-x-1">
                                     <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                    <span>Tự động sinh mã mẫu theo mã phiếu</span>
+                                    <span>Tự động sinh lại mã mẫu</span>
                                 </button>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Nhiệt: HC.1.yy.xxx</label>
-                                    <input type="text" id="code-temp" placeholder="HC.1.26.xxx"
-                                        class="w-full px-3 py-2 text-sm font-mono font-medium bg-white border border-slate-300 rounded-xl focus:ring-1 focus:ring-digi">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label class="block text-xs font-bold text-slate-700">1. Nhiệt: HC.1.yy.xxx</label>
+                                        <span id="badge-count-temp" class="text-[11px] font-mono font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">0 mã</span>
+                                    </div>
+                                    <textarea id="code-temp" rows="2" placeholder="HC.1.26.xxx&#10;HC.1.26.yyy" oninput="updateSampleCodeBadges()"
+                                        class="w-full px-3 py-2 text-xs font-mono font-semibold bg-white border border-slate-300 rounded-xl focus:ring-1 focus:ring-digi leading-relaxed resize-y"></textarea>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Nhiệt ẩm: HC.2.yy.xxx</label>
-                                    <input type="text" id="code-hum" placeholder="HC.2.26.xxx"
-                                        class="w-full px-3 py-2 text-sm font-mono font-medium bg-white border border-slate-300 rounded-xl focus:ring-1 focus:ring-digi">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label class="block text-xs font-bold text-slate-700">2. Nhiệt ẩm: HC.2.yy.xxx</label>
+                                        <span id="badge-count-hum" class="text-[11px] font-mono font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">0 mã</span>
+                                    </div>
+                                    <textarea id="code-hum" rows="2" placeholder="HC.2.26.xxx&#10;HC.2.26.yyy" oninput="updateSampleCodeBadges()"
+                                        class="w-full px-3 py-2 text-xs font-mono font-semibold bg-white border border-slate-300 rounded-xl focus:ring-1 focus:ring-digi leading-relaxed resize-y"></textarea>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Áp: HC.3.yy.xxx</label>
-                                    <input type="text" id="code-press" placeholder="HC.3.26.xxx"
-                                        class="w-full px-3 py-2 text-sm font-mono font-medium bg-white border border-slate-300 rounded-xl focus:ring-1 focus:ring-digi">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label class="block text-xs font-bold text-slate-700">3. Áp: HC.3.yy.xxx</label>
+                                        <span id="badge-count-press" class="text-[11px] font-mono font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">0 mã</span>
+                                    </div>
+                                    <textarea id="code-press" rows="2" placeholder="HC.3.26.xxx&#10;HC.3.26.yyy" oninput="updateSampleCodeBadges()"
+                                        class="w-full px-3 py-2 text-xs font-mono font-semibold bg-white border border-slate-300 rounded-xl focus:ring-1 focus:ring-digi leading-relaxed resize-y"></textarea>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Khí: HC.4.yy.xxx</label>
-                                    <input type="text" id="code-gas" placeholder="HC.4.26.xxx"
-                                        class="w-full px-3 py-2 text-sm font-mono font-medium bg-white border border-slate-300 rounded-xl focus:ring-1 focus:ring-digi">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label class="block text-xs font-bold text-slate-700">4. Khí: HC.4.yy.xxx</label>
+                                        <span id="badge-count-gas" class="text-[11px] font-mono font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">0 mã</span>
+                                    </div>
+                                    <textarea id="code-gas" rows="2" placeholder="HC.4.26.xxx&#10;HC.4.26.yyy" oninput="updateSampleCodeBadges()"
+                                        class="w-full px-3 py-2 text-xs font-mono font-semibold bg-white border border-slate-300 rounded-xl focus:ring-1 focus:ring-digi leading-relaxed resize-y"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1130,20 +1158,20 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1.5 uppercase text-xs">Mã mẫu Nhiệt</label>
-                        <input type="text" id="edit-code-temp" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-mono">
+                        <label class="block font-bold text-slate-700 mb-1.5 uppercase text-xs">Mã mẫu Nhiệt (1 mã/dòng)</label>
+                        <textarea id="edit-code-temp" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-xs leading-relaxed resize-y"></textarea>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1.5 uppercase text-xs">Mã mẫu Nhiệt ẩm</label>
-                        <input type="text" id="edit-code-hum" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-mono">
+                        <label class="block font-bold text-slate-700 mb-1.5 uppercase text-xs">Mã mẫu Nhiệt ẩm (1 mã/dòng)</label>
+                        <textarea id="edit-code-hum" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-xs leading-relaxed resize-y"></textarea>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1.5 uppercase text-xs">Mã mẫu Áp</label>
-                        <input type="text" id="edit-code-press" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-mono">
+                        <label class="block font-bold text-slate-700 mb-1.5 uppercase text-xs">Mã mẫu Áp (1 mã/dòng)</label>
+                        <textarea id="edit-code-press" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-xs leading-relaxed resize-y"></textarea>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1.5 uppercase text-xs">Mã mẫu Khí</label>
-                        <input type="text" id="edit-code-gas" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-mono">
+                        <label class="block font-bold text-slate-700 mb-1.5 uppercase text-xs">Mã mẫu Khí (1 mã/dòng)</label>
+                        <textarea id="edit-code-gas" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-xs leading-relaxed resize-y"></textarea>
                     </div>
 
                     <div>
@@ -1528,6 +1556,7 @@
 
             document.getElementById('service-description').value = generatedDesc;
             autoSyncProcedures(hasTemp, hasHum, hasPress, selectedGases.length > 0);
+            autoAllocateSampleCodes(false);
         }
 
         function autoSyncProcedures(hasTemp, hasHum, hasPress, hasGas) {
@@ -1541,32 +1570,137 @@
             });
         }
 
-        function autoAllocateSampleCodes() {
-            const code = document.getElementById('req-code').value.trim();
-            if (!code) {
-                showToast('Vui lòng nhập Mã phiếu trước (ví dụ HC.26.015)!', 'warning');
-                return;
-            }
-
+        function getCodePrefixAndStt() {
+            const codeInput = document.getElementById('req-code');
+            const code = codeInput ? codeInput.value.trim() : '';
             const parts = code.split('.');
-            let yy = new Date().getFullYear().toString().slice(-2);
-            let num = '001';
+            let nam = new Date().getFullYear().toString().slice(-2);
+            let stt_goc = 1;
             if (parts.length >= 3) {
-                yy = parts[1];
-                num = parts[2];
+                nam = parts[1];
+                stt_goc = parseInt(parts[2], 10) || 1;
             }
+            return { nam, stt_goc };
+        }
+
+        function autoAllocateSampleCodes(manualClick = false) {
+            const { nam, stt_goc } = getCodePrefixAndStt();
+
+            let totalQty = 0;
+            document.querySelectorAll('#device-tbody tr').forEach(tr => {
+                const qtyInput = tr.querySelector('input[name="dev_qty"]');
+                const q = parseInt(qtyInput ? qtyInput.value : 1, 10) || 1;
+                totalQty += q;
+            });
+            if (totalQty < 1) totalQty = 1;
 
             const hasTemp = document.getElementById('param-temp').checked;
             const hasHum = document.getElementById('param-hum').checked;
             const hasPress = document.getElementById('param-press').checked;
             const hasGas = document.querySelectorAll('input[name="gas_param"]:checked').length > 0;
 
-            if (hasTemp) document.getElementById('code-temp').value = `HC.1.${yy}.${num}`;
-            if (hasHum) document.getElementById('code-hum').value = `HC.2.${yy}.${num}`;
-            if (hasPress) document.getElementById('code-press').value = `HC.3.${yy}.${num}`;
-            if (hasGas) document.getElementById('code-gas').value = `HC.4.${yy}.${num}`;
+            function generateGroupCodes(nhom, count) {
+                const arr = [];
+                for (let i = 1; i <= count; i++) {
+                    const stt = String(stt_goc + i - 1).padStart(3, '0');
+                    arr.push(`HC.${nhom}.${nam}.${stt}`);
+                }
+                return arr.join('
+');
+            }
 
-            showToast('Đã tự động phân bổ mã mẫu chuyên dụng!', 'success');
+            const tempEl = document.getElementById('code-temp');
+            const humEl = document.getElementById('code-hum');
+            const pressEl = document.getElementById('code-press');
+            const gasEl = document.getElementById('code-gas');
+
+            if (!tempEl) return;
+
+            const autoRows = Math.max(2, Math.min(8, totalQty));
+
+            if (hasTemp) {
+                tempEl.value = generateGroupCodes(1, totalQty);
+            } else if (!manualClick) {
+                tempEl.value = '';
+            }
+            tempEl.rows = autoRows;
+
+            if (hasHum) {
+                humEl.value = generateGroupCodes(2, totalQty);
+            } else if (!manualClick) {
+                humEl.value = '';
+            }
+            humEl.rows = autoRows;
+
+            if (hasPress) {
+                pressEl.value = generateGroupCodes(3, totalQty);
+            } else if (!manualClick) {
+                pressEl.value = '';
+            }
+            pressEl.rows = autoRows;
+
+            if (hasGas) {
+                gasEl.value = generateGroupCodes(4, totalQty);
+            } else if (!manualClick) {
+                gasEl.value = '';
+            }
+            gasEl.rows = autoRows;
+
+            // Nếu người dùng bấm nút thủ công nhưng chưa tick thông số nào: sinh theo mặc định
+            if (manualClick && !hasTemp && !hasHum && !hasPress && !hasGas) {
+                tempEl.value = generateGroupCodes(1, totalQty);
+                humEl.value = generateGroupCodes(2, totalQty);
+                pressEl.value = generateGroupCodes(3, totalQty);
+                gasEl.value = generateGroupCodes(4, totalQty);
+            }
+
+            updateSampleCodeBadges();
+
+            if (manualClick) {
+                showToast(`Đã tự động phân bổ mã mẫu cho số lượng: ${totalQty} (mỗi mã 1 dòng)!`, 'success');
+            }
+        }
+
+        function updateSampleCodeBadges() {
+            ['temp', 'hum', 'press', 'gas'].forEach(grp => {
+                const el = document.getElementById(`code-${grp}`);
+                const badge = document.getElementById(`badge-count-${grp}`);
+                if (el && badge) {
+                    const count = el.value.split('
+').map(s => s.trim()).filter(Boolean).length;
+                    badge.textContent = `${count} mã`;
+                    if (count > 0) {
+                        badge.className = 'text-[11px] font-mono font-bold text-digi bg-red-50 border border-red-200 px-2 py-0.5 rounded-md';
+                    } else {
+                        badge.className = 'text-[11px] font-mono font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md';
+                    }
+                }
+            });
+        }
+
+        function formatSampleCodeCell(codeStr) {
+            if (!codeStr || !codeStr.trim()) return '<span class="text-slate-300">—</span>';
+            const items = codeStr.split(/[
+,;]+|<br\s*\/?>/i)
+                .map(s => s.trim())
+                .filter(Boolean);
+            if (items.length === 0) return '<span class="text-slate-300">—</span>';
+            return items.map(c => `<div class="sample-code-item font-mono text-xs font-bold text-slate-800 py-0.5 whitespace-nowrap leading-tight">${c}</div>`).join('');
+        }
+
+        function formatToLines(str) {
+            if (!str) return '';
+            return str.split(/[
+,;]+|<br\s*\/?>/i).map(s => s.trim()).filter(Boolean).join('
+');
+        }
+
+        function getCleanSampleCodes(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return '';
+            return el.value.split('
+').map(s => s.trim()).filter(Boolean).join('
+');
         }
 
         async function fetchNextCode() {
@@ -1576,6 +1710,7 @@
                     const data = await res.json();
                     document.getElementById('req-code').value = data.next_code;
                     document.getElementById('form-code-badge').textContent = data.next_code;
+                    autoAllocateSampleCodes(false);
                     return;
                 }
             } catch (e) {}
@@ -1646,10 +1781,10 @@
                 contact_phone: document.getElementById('req-contact-phone').value.trim(),
                 contact_email: document.getElementById('req-contact-email').value.trim(),
                 devices: devices,
-                code_temp: document.getElementById('code-temp').value.trim(),
-                code_hum: document.getElementById('code-hum').value.trim(),
-                code_press: document.getElementById('code-press').value.trim(),
-                code_gas: document.getElementById('code-gas').value.trim(),
+                code_temp: getCleanSampleCodes('code-temp'),
+                code_hum: getCleanSampleCodes('code-hum'),
+                code_press: getCleanSampleCodes('code-press'),
+                code_gas: getCleanSampleCodes('code-gas'),
                 procedures: procedures,
                 params_gas: paramsGas,
                 params_measure: paramsMeasure,
@@ -1937,11 +2072,11 @@
                     <td class="p-3 text-slate-900 font-medium max-w-[280px]">${r.service_desc || '—'}</td>
                     <td class="p-3 font-bold text-slate-900 max-w-[240px]">${r.customer_name || '—'}</td>
                     
-                    <!-- 4 Mã mẫu (thanh lịch, hạn chế màu) -->
-                    <td class="p-2 text-center font-mono text-xs text-slate-700">${r.code_temp || '—'}</td>
-                    <td class="p-2 text-center font-mono text-xs text-slate-700 whitespace-pre-line">${r.code_hum || '—'}</td>
-                    <td class="p-2 text-center font-mono text-xs text-slate-700">${r.code_press || '—'}</td>
-                    <td class="p-2 text-center font-mono text-xs text-slate-700">${r.code_gas || '—'}</td>
+                    <!-- 4 Mã mẫu: Mỗi mã nằm trên 1 hàng riêng biệt, căn lề thẳng hàng, tuyệt đối không dùng dấu phẩy -->
+                    <td class="p-2 text-center align-middle">${formatSampleCodeCell(r.code_temp)}</td>
+                    <td class="p-2 text-center align-middle">${formatSampleCodeCell(r.code_hum)}</td>
+                    <td class="p-2 text-center align-middle">${formatSampleCodeCell(r.code_press)}</td>
+                    <td class="p-2 text-center align-middle">${formatSampleCodeCell(r.code_gas)}</td>
 
                     <td class="p-3 text-center font-bold text-slate-800">${qty}</td>
                     <td class="p-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">${formatCurrency(r.revenue || 0)}</td>
@@ -2076,10 +2211,10 @@
             document.getElementById('edit-contract').value = req.contract_sales || '';
             document.getElementById('edit-customer').value = req.customer_name || '';
             document.getElementById('edit-desc').value = req.service_desc || '';
-            document.getElementById('edit-code-temp').value = req.code_temp || '';
-            document.getElementById('edit-code-hum').value = req.code_hum || '';
-            document.getElementById('edit-code-press').value = req.code_press || '';
-            document.getElementById('edit-code-gas').value = req.code_gas || '';
+            document.getElementById('edit-code-temp').value = formatToLines(req.code_temp);
+            document.getElementById('edit-code-hum').value = formatToLines(req.code_hum);
+            document.getElementById('edit-code-press').value = formatToLines(req.code_press);
+            document.getElementById('edit-code-gas').value = formatToLines(req.code_gas);
             document.getElementById('edit-revenue').value = req.revenue || 0;
             document.getElementById('edit-technician').value = req.technician || '';
             document.getElementById('edit-received-person').value = req.received_person || req.recipient_person || (req.received_info && req.received_info.includes('_') ? req.received_info.split('_')[1] : '') || '';
@@ -2108,10 +2243,10 @@
                 contract_sales: document.getElementById('edit-contract').value.trim(),
                 customer_name: document.getElementById('edit-customer').value.trim(),
                 service_desc: document.getElementById('edit-desc').value.trim(),
-                code_temp: document.getElementById('edit-code-temp').value.trim(),
-                code_hum: document.getElementById('edit-code-hum').value.trim(),
-                code_press: document.getElementById('edit-code-press').value.trim(),
-                code_gas: document.getElementById('edit-code-gas').value.trim(),
+                code_temp: getCleanSampleCodes('edit-code-temp'),
+                code_hum: getCleanSampleCodes('edit-code-hum'),
+                code_press: getCleanSampleCodes('edit-code-press'),
+                code_gas: getCleanSampleCodes('edit-code-gas'),
                 revenue: parseFloat(document.getElementById('edit-revenue').value) || 0,
                 technician: document.getElementById('edit-technician').value.trim(),
                 received_person: document.getElementById('edit-received-person').value.trim(),
