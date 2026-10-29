@@ -1451,8 +1451,6 @@ html_content = f'''<!DOCTYPE html>
             showLoginModal();
             showToast('Đã đăng xuất khỏi phiên làm việc', 'info');
         }}
-            showToast('Đã đăng xuất khỏi phiên làm việc', 'info');
-        }}
 
         // ----------------- TABS NAVIGATION -----------------
         function switchTab(tabIndex) {{
@@ -1656,7 +1654,7 @@ html_content = f'''<!DOCTYPE html>
                     const stt = String(stt_goc + i - 1).padStart(3, '0');
                     arr.push(`HC.${{nhom}}.${{nam}}.${{stt}}`);
                 }}
-                return arr.join('\n');
+                return arr.join(String.fromCharCode(10));
             }}
 
             const tempEl = document.getElementById('code-temp');
@@ -1711,12 +1709,26 @@ html_content = f'''<!DOCTYPE html>
             }}
         }}
 
+        function parseCodesToArray(str) {{
+            if (!str) return [];
+            const LF = String.fromCharCode(10);
+            const CR = String.fromCharCode(13);
+            return String(str)
+                .replace(/<br[^>]*>/gi, LF)
+                .replaceAll(CR, LF)
+                .replaceAll(',', LF)
+                .replaceAll(';', LF)
+                .split(LF)
+                .map(s => s.trim())
+                .filter(Boolean);
+        }}
+
         function updateSampleCodeBadges() {{
             ['temp', 'hum', 'press', 'gas'].forEach(grp => {{
                 const el = document.getElementById(`code-${{grp}}`);
                 const badge = document.getElementById(`badge-count-${{grp}}`);
                 if (el && badge) {{
-                    const count = el.value.split('\n').map(s => s.trim()).filter(Boolean).length;
+                    const count = parseCodesToArray(el.value).length;
                     badge.textContent = `${{count}} mã`;
                     if (count > 0) {{
                         badge.className = 'text-[11px] font-mono font-bold text-digi bg-red-50 border border-red-200 px-2 py-0.5 rounded-md';
@@ -1728,23 +1740,19 @@ html_content = f'''<!DOCTYPE html>
         }}
 
         function formatSampleCodeCell(codeStr) {{
-            if (!codeStr || !codeStr.trim()) return '<span class="text-slate-300">—</span>';
-            const items = codeStr.split(/[\r\n,;]+|<br\\s*\\/?>/i)
-                .map(s => s.trim())
-                .filter(Boolean);
+            const items = parseCodesToArray(codeStr);
             if (items.length === 0) return '<span class="text-slate-300">—</span>';
             return items.map(c => `<div class="sample-code-item font-mono text-xs font-bold text-slate-800 py-0.5 whitespace-nowrap leading-tight">${{c}}</div>`).join('');
         }}
 
         function formatToLines(str) {{
-            if (!str) return '';
-            return str.split(/[\r\n,;]+|<br\\s*\\/?>/i).map(s => s.trim()).filter(Boolean).join('\n');
+            return parseCodesToArray(str).join(String.fromCharCode(10));
         }}
 
         function getCleanSampleCodes(elementId) {{
             const el = document.getElementById(elementId);
             if (!el) return '';
-            return el.value.split('\n').map(s => s.trim()).filter(Boolean).join('\n');
+            return parseCodesToArray(el.value).join(String.fromCharCode(10));
         }}
 
         async function fetchNextCode() {{
